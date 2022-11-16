@@ -971,14 +971,13 @@ impl<W: Write> Writer<W> {
     /// Unlike a simple drop this ensures that the final chunk was written correctly. When other
     /// validation options (chunk sequencing) had been turned on in the configuration then it will
     /// also do a check on their correctness _before_ writing the final chunk.
-    pub fn finish(mut self) -> Result<()> {
+    pub fn finish(mut self) -> Result<W> {
         self.validate_sequence_done()?;
         self.write_iend()?;
         self.w.flush()?;
 
-        // Explicitly drop `self` just for clarity.
-        drop(self);
-        Ok(())
+        let x = mem::ManuallyDrop::new(self);
+        Ok(unsafe { core::ptr::read(&x.w) })
     }
 }
 
